@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMTECHNOLOGYEXPERT | Acceso al sistema</title>
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <section id="adminLoginScreen" class="screen-center">
+    <article class="login-card card">
+      <p class="overline">JMTECHNOLOGYEXPERT</p>
+      <h1>Acceso al sistema</h1>
+      <p class="muted">Ingresa con tu usuario y contraseña. El sistema detecta automáticamente tu perfil y permisos.</p>
+      <form id="adminLoginForm">
+        <div class="form-grid single">
+          <label class="field">
+            <span>Usuario</span>
+            <input id="adminUser" autocomplete="username" required>
+          </label>
+          <label class="field">
+            <span>Contraseña</span>
+            <input id="adminPass" type="password" autocomplete="current-password" required>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="button primary" type="submit">Iniciar sesión</button>
+        </div>
+      </form>
+      <div id="adminLoginMsg" class="message hidden"></div>
+      <div class="inline-note">
+        Acceso inicial:
+        <code>admin</code> / <code>Admin123!</code>
+      </div>
+    </article>
+  </section>
+
+  <div id="adminApp" class="app-shell hidden">
+    <aside class="sidebar card">
+      <div class="sidebar-brand">
+        <p class="overline">JMTECHNOLOGYEXPERT</p>
+        <h2 id="sidebarCommunityName">Sistema de Alícuotas</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-section="dashboard">📊 Dashboard</button>
+        <button class="nav-btn" data-section="clients">👥 Clientes</button>
+        <button class="nav-btn" data-section="payments">💳 Pagos</button>
+        <button class="nav-btn" data-section="expenses">💸 Gastos</button>
+        <button class="nav-btn" data-section="calendar">📅 Calendario</button>
+        <button class="nav-btn" data-section="reports">📄 Reportes</button>
+        <button class="nav-btn" data-section="settings">⚙️ Configuración</button>
+        <button id="navUsersBtn" class="nav-btn" data-section="users">🔐 Usuarios</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span id="modeBadge" class="mode-badge"></span>
+        <a id="clientPortalRootLink" href="cliente.html" target="_blank" rel="noopener">Abrir portal cliente ↗</a>
+        <button id="adminLogoutBtn" class="button danger" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar card">
+        <div>
+          <h1>Panel de gestión</h1>
+          <p class="muted">Interfaz unificada con control de permisos por rol.</p>
+          <p id="accessHint" class="muted"></p>
+        </div>
+        <div class="session-chip" id="currentAdminLabel"></div>
+      </header>
+
+      <section id="section-dashboard" class="section-panel active">
+        <div class="kpi-grid">
+          <article class="kpi card"><span>Total clientes</span><strong id="mTotalClients">0</strong></article>
+          <article class="kpi card"><span>Clientes al día</span><strong id="mPaidClients">0</strong></article>
+          <article class="kpi card"><span>Clientes pendientes</span><strong id="mPendingClients">0</strong></article>
+          <article class="kpi card"><span>Recaudado</span><strong id="mCollected">$0</strong></article>
+          <article class="kpi card"><span>Gastos</span><strong id="mExpenses">$0</strong></article>
+        </div>
+        <article class="card section-card">
+          <h2>Recordatorios automáticos de mora</h2>
+          <p class="muted">Alertas de clientes con saldo pendiente y vencimientos próximos.</p>
+          <ul id="remindersList" class="alerts"></ul>
+        </article>
+      </section>
+
+      <section id="section-clients" class="section-panel hidden">
+        <div class="two-col">
+          <article class="card section-card">
+            <h2>Registro de clientes + cuenta de acceso</h2>
+            <form id="clientCreateForm">
+              <div class="form-grid">
+                <label class="field"><span>Nombre completo</span><input id="clientFullName" required></label>
+                <label class="field"><span>Correo</span><input id="clientEmail" type="email"></label>
+                <label class="field"><span>Teléfono</span><input id="clientPhone"></label>
+                <label class="field"><span>Apartamento</span><input id="clientApartment" required></label>
+                <label class="field"><span>Edificio</span><input id="clientBuilding"></label>
+                <label class="field"><span>Cuota mensual</span><input id="clientMonthlyFee" type="number" min="0" step="0.01" required></label>
+                <label class="field"><span>Saldo inicial</span><input id="clientBalance" type="number" min="0" step="0.01" value="0"></label>
+                <label class="field"><span>Próximo vencimiento</span><input id="clientDueDate" type="date" required></label>
+                <label class="field"><span>Nombre de cuenta cliente</span><input id="ownerFullName" required></label>
+                <label class="field"><span>Usuario cliente</span><input id="ownerUsername" required></label>
+                <label class="field"><span>Contraseña cliente</span><input id="ownerPassword" type="password" required></label>
+                <label class="field full"><span>Notas</span><textarea id="clientNotes"></textarea></label>
+              </div>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Guardar cliente</button>
+              </div>
+            </form>
+            <div id="clientFormMsg" class="message hidden"></div>
+          </article>
+          <article class="card section-card">
+            <h2>Clientes registrados</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Contacto</th>
+                    <th>Propiedad</th>
+                    <th>Cuota</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                    <th>Acceso cliente</th>
+                  </tr>
+                </thead>
+                <tbody id="clientsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-payments" class="section-panel hidden">
+        <div class="two-col">
+          <article class="card section-card">
+            <h2>Registro de pagos</h2>
+            <form id="paymentCreateForm">
+              <div class="form-grid">
+                <label class="field"><span>Cliente</span><select id="paymentClientId" required></select></label>
+                <label class="field"><span>Monto</span><input id="paymentAmount" type="number" min="0" step="0.01" required></label>
+                <label class="field"><span>Método</span>
+                  <select id="paymentMethod">
+                    <option>Transferencia</option>
+                    <option>Efectivo</option>
+                    <option>Pago Móvil</option>
+                    <option>Zelle</option>
+                    <option>Punto de Venta</option>
+                  </select>
+                </label>
+                <label class="field"><span>Referencia</span><input id="paymentReference"></label>
+                <label class="field"><span>Fecha</span><input id="paymentDate" type="date" required></label>
+                <label class="field full"><span>Notas</span><textarea id="paymentNotes"></textarea></label>
+              </div>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Registrar pago</button>
+              </div>
+            </form>
+            <div id="paymentFormMsg" class="message hidden"></div>
+          </article>
+          <article class="card section-card">
+            <h2>Historial de pagos</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Método</th>
+                    <th>Referencia</th>
+                    <th>Registrado por</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-expenses" class="section-panel hidden">
+        <div class="two-col">
+          <article class="card section-card">
+            <h2>Registro de gastos</h2>
+            <form id="expenseCreateForm">
+              <div class="form-grid">
+                <label class="field"><span>Descripción</span><input id="expenseDescription" required></label>
+                <label class="field"><span>Monto</span><input id="expenseAmount" type="number" min="0" step="0.01" required></label>
+                <label class="field"><span>Categoría</span><input id="expenseCategory" value="General"></label>
+                <label class="field"><span>Método</span><input id="expenseMethod" value="Transferencia"></label>
+                <label class="field"><span>Referencia</span><input id="expenseReference"></label>
+                <label class="field"><span>Fecha</span><input id="expenseDate" type="date" required></label>
+                <label class="field full"><span>Notas</span><textarea id="expenseNotes"></textarea></label>
+              </div>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Registrar gasto</button>
+              </div>
+            </form>
+            <div id="expenseFormMsg" class="message hidden"></div>
+          </article>
+          <article class="card section-card">
+            <h2>Historial de gastos</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Monto</th>
+                    <th>Método</th>
+                  </tr>
+                </thead>
+                <tbody id="expensesTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-calendar" class="section-panel hidden">
+        <div class="two-col">
+          <article class="card section-card">
+            <h2>Eventos y vencimientos</h2>
+            <form id="eventCreateForm">
+              <div class="form-grid">
+                <label class="field"><span>Título</span><input id="eventTitle" required></label>
+                <label class="field"><span>Fecha</span><input id="eventDate" type="date" required></label>
+                <label class="field"><span>Hora</span><input id="eventTime" type="time"></label>
+                <label class="field"><span>Tipo</span>
+                  <select id="eventType">
+                    <option value="general">General</option>
+                    <option value="vencimiento">Vencimiento</option>
+                    <option value="asamblea">Asamblea</option>
+                    <option value="mantenimiento">Mantenimiento</option>
+                  </select>
+                </label>
+                <label class="field"><span>Color</span><input id="eventColor" type="color" value="#00d4ff"></label>
+                <label class="field full"><span>Descripción</span><textarea id="eventDescription"></textarea></label>
+              </div>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Crear evento</button>
+              </div>
+            </form>
+            <div id="eventFormMsg" class="message hidden"></div>
+          </article>
+          <article class="card section-card">
+            <h2>Calendario de eventos</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody id="eventsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-reports" class="section-panel hidden">
+        <article class="card section-card">
+          <h2>Resumen ejecutivo</h2>
+          <div class="kpi-grid compact">
+            <article class="kpi card"><span>Total ingresos</span><strong id="reportTotalIncome">$0</strong></article>
+            <article class="kpi card"><span>Total gastos</span><strong id="reportTotalExpenses">$0</strong></article>
+            <article class="kpi card"><span>Balance neto</span><strong id="reportNetBalance">$0</strong></article>
+            <article class="kpi card"><span>Pendiente por cobrar</span><strong id="reportPendingBalance">$0</strong></article>
+          </div>
+          <div class="form-actions">
+            <button id="exportPaymentsCsvBtn" class="button" type="button">Exportar pagos CSV</button>
+            <button id="exportExpensesCsvBtn" class="button" type="button">Exportar gastos CSV</button>
+            <button id="exportClientsCsvBtn" class="button" type="button">Exportar clientes CSV</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="section-settings" class="section-panel hidden">
+        <article class="card section-card">
+          <h2>Configuración general</h2>
+          <form id="settingsForm">
+            <div class="form-grid">
+              <label class="field"><span>Nombre del conjunto</span><input id="settingsCommunityName" required></label>
+              <label class="field"><span>Moneda</span>
+                <select id="settingsCurrency">
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="COP">COP</option>
+                  <option value="MXN">MXN</option>
+                </select>
+              </label>
+              <label class="field"><span>Día de pago mensual</span><input id="settingsPaymentDay" type="number" min="1" max="31" required></label>
+              <label class="field"><span>Días de recordatorio</span><input id="settingsReminderDays" type="number" min="0" max="30" required></label>
+              <label class="field full"><span>Clave administrativa para configuraciones sensibles</span><input id="settingsAdvancedKey" type="password"></label>
+            </div>
+            <div class="form-actions">
+              <button class="button primary" type="submit">Guardar configuración</button>
+            </div>
+          </form>
+          <div id="settingsFormMsg" class="message hidden"></div>
+        </article>
+      </section>
+
+      <section id="section-users" class="section-panel hidden">
+        <div class="two-col">
+          <article class="card section-card">
+            <h2>Crear usuario</h2>
+            <form id="userCreateForm">
+              <div class="form-grid">
+                <label class="field"><span>Nombre completo</span><input id="userFullName" required></label>
+                <label class="field"><span>Usuario</span><input id="userUsername" required></label>
+                <label class="field"><span>Correo</span><input id="userEmail" type="email"></label>
+                <label class="field"><span>Rol</span>
+                  <select id="userRole">
+                    <option value="superadmin">Fabricante</option>
+                    <option value="admin">Administrador</option>
+                    <option value="cliente">Copropietario</option>
+                  </select>
+                </label>
+                <label class="field"><span>Cliente asociado (si aplica)</span><select id="userClientId"></select></label>
+                <label class="field"><span>Contraseña</span><input id="userPassword" type="password" required></label>
+              </div>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Crear usuario</button>
+              </div>
+            </form>
+            <div id="userFormMsg" class="message hidden"></div>
+          </article>
+          <article class="card section-card">
+            <h2>Usuarios del sistema</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/data-service.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMTECHNOLOGYEXPERT | Portal Cliente</title>
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <section id="clientLoginScreen" class="screen-center">
+    <article class="login-card card">
+      <p class="overline">Portal Cliente</p>
+      <h1>Acceso unificado</h1>
+      <p class="muted">Este portal usa el login único del sistema. Inicia sesión una sola vez y vuelve aquí para ver tu estado de cuenta.</p>
+      <div class="form-actions">
+        <a id="singleLoginBtn" class="button primary" href="admin.html">Ir al login único</a>
+      </div>
+      <div id="clientLoginMsg" class="message hidden"></div>
+    </article>
+  </section>
+
+  <main id="clientApp" class="portal-shell hidden">
+    <header class="topbar card">
+      <div>
+        <p class="overline">JMTECHNOLOGYEXPERT</p>
+        <h1 id="clientCommunityName">Portal de cliente</h1>
+      </div>
+      <div class="session-group">
+        <span id="modeBadgeClient" class="mode-badge"></span>
+        <span id="currentClientLabel" class="session-chip"></span>
+        <button id="clientLogoutBtn" class="button danger" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi card">
+        <span>Cliente</span>
+        <strong id="cClientName">-</strong>
+      </article>
+      <article class="kpi card">
+        <span>Saldo pendiente</span>
+        <strong id="cBalance">$0</strong>
+      </article>
+      <article class="kpi card">
+        <span>Cuota mensual</span>
+        <strong id="cMonthlyFee">$0</strong>
+      </article>
+      <article class="kpi card">
+        <span>Próximo vencimiento</span>
+        <strong id="cNextDue">-</strong>
+      </article>
+      <article class="kpi card">
+        <span>Total pagado</span>
+        <strong id="cTotalPaid">$0</strong>
+      </article>
+    </section>
+
+    <div id="clientEmptyState" class="card section-card hidden">
+      No hay una cuenta de cliente asociada a este usuario.
+    </div>
+
+    <section class="two-col">
+      <article class="card section-card">
+        <h2>Historial de pagos</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody id="clientPaymentsBody"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card section-card">
+        <h2>Calendario de eventos</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Título</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody id="clientEventsBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/data-service.js"></script>
+  <script src="assets/js/client.js"></script>
+</body>
+</html>
