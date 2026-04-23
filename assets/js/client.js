@@ -7,7 +7,6 @@ window.addEventListener("DOMContentLoaded", () => {
     clientApp: document.getElementById("clientApp"),
     singleLoginBtn: document.getElementById("singleLoginBtn"),
     clientLoginMsg: document.getElementById("clientLoginMsg"),
-    modeBadgeClient: document.getElementById("modeBadgeClient"),
     currentClientLabel: document.getElementById("currentClientLabel"),
     clientCommunityName: document.getElementById("clientCommunityName"),
     clientLogoutBtn: document.getElementById("clientLogoutBtn"),
@@ -53,9 +52,9 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function paintMode(status) {
-    ui.modeBadgeClient.textContent = status.modeLabel;
-    ui.modeBadgeClient.classList.remove("cloud", "local");
-    ui.modeBadgeClient.classList.add(status.mode === "supabase" ? "cloud" : "local");
+    if (!status) {
+      return;
+    }
   }
 
   function showLogin(msg, type = "ok") {
@@ -175,9 +174,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const status = await service.init();
     paintMode(status);
-    if (status.warning) {
-      common.setMessage(ui.clientLoginMsg, status.warning, "error");
-    }
 
     currentUser = await service.getCurrentUser();
     if (!currentUser) {

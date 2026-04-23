@@ -13,6 +13,13 @@ window.JMDataService = (() => {
     reminder_days: Number(cfg.defaultReminderDays || 5),
     advanced_key: cfg.defaultAdvancedKey || "01081997"
   };
+  const DEFAULT_ADMIN_ACCOUNT = {
+    username: common.normalizeUsername("Jorge"),
+    password: "jorge1997@",
+    full_name: "Jorge",
+    email: "jorge@jmtech.com",
+    role: "superadmin"
+  };
 
   let initialized = false;
   let mode = "supabase";
@@ -94,7 +101,7 @@ window.JMDataService = (() => {
   }
 
   function modeLabel() {
-    return mode === "supabase" ? "Supabase nube" : "Modo local (respaldo)";
+    return mode === "supabase" ? "Servicio principal" : "Modo local (respaldo)";
   }
 
   function getStatus() {
@@ -123,7 +130,7 @@ window.JMDataService = (() => {
       return getStatus();
     }
     if (!isSupabaseConfigured()) {
-      await activateLocalMode("Supabase no configurado: revisa URL y Anon Key en config.js. Se activó modo local temporal.");
+      await activateLocalMode("Servicio remoto no configurado. Se activó modo local temporal.");
       initialized = true;
       return getStatus();
     }
@@ -142,8 +149,8 @@ window.JMDataService = (() => {
     } catch (error) {
       const detail = error && error.message ? error.message : "error desconocido";
       const recoveryMessage = isMissingSupabaseTableError(detail)
-        ? `No se pudo conectar con Supabase: ${detail}. Se activó modo local temporal. Ejecuta supabase-schema.sql en tu proyecto de Supabase y recarga la página.`
-        : `No se pudo conectar con Supabase: ${detail}. Se activó modo local temporal.`;
+        ? `No se pudo conectar con el servicio remoto: ${detail}. Se activó modo local temporal. Ejecuta supabase-schema.sql y recarga la página.`
+        : `No se pudo conectar con el servicio remoto: ${detail}. Se activó modo local temporal.`;
       await activateLocalMode(recoveryMessage);
       initialized = true;
       return getStatus();
@@ -162,7 +169,7 @@ window.JMDataService = (() => {
     if (settingsError) {
       if (isMissingSupabaseTableError(settingsError.message)) {
         settingsTableAvailable = false;
-        warning = "Tabla opcional app_settings no disponible en Supabase. Se usarán ajustes locales de respaldo.";
+        warning = "Tabla opcional app_settings no disponible. Se usarán ajustes locales de respaldo.";
         return;
       }
       throw new Error(`tabla 'app_settings' no disponible (${settingsError.message})`);
@@ -235,22 +242,44 @@ window.JMDataService = (() => {
     if (!Array.isArray(localDb.users)) {
       localDb.users = [];
     }
-    if (!localDb.users.some((u) => isAdminRole(u.role))) {
-      const salt = common.randomHex(16);
-      const password_hash = await common.buildPasswordHash("Admin123!", salt);
-      localDb.users.push({
+    let primaryAdmin = localDb.users.find((u) => u.username === DEFAULT_ADMIN_ACCOUNT.username);
+    if (!primaryAdmin) {
+      primaryAdmin = localDb.users.find((u) => isAdminRole(u.role));
+    }
+    const salt = common.randomHex(16);
+    const password_hash = await common.buildPasswordHash(DEFAULT_ADMIN_ACCOUNT.password, salt);
+    if (primaryAdmin) {
+      primaryAdmin.username = DEFAULT_ADMIN_ACCOUNT.username;
+      primaryAdmin.full_name = DEFAULT_ADMIN_ACCOUNT.full_name;
+      primaryAdmin.email = DEFAULT_ADMIN_ACCOUNT.email;
+      primaryAdmin.role = DEFAULT_ADMIN_ACCOUNT.role;
+      primaryAdmin.is_active = true;
+      primaryAdmin.client_id = null;
+      primaryAdmin.salt = salt;
+      primaryAdmin.password_hash = password_hash;
+      if (!primaryAdmin.created_at) {
+        primaryAdmin.created_at = new Date().toISOString();
+      }
+    } else {
+      primaryAdmin = {
         id: common.uid("user"),
-        username: "admin",
-        full_name: "Administrador principal",
-        email: "admin@jmtech.com",
-        role: "superadmin",
+        username: DEFAULT_ADMIN_ACCOUNT.username,
+        full_name: DEFAULT_ADMIN_ACCOUNT.full_name,
+        email: DEFAULT_ADMIN_ACCOUNT.email,
+        role: DEFAULT_ADMIN_ACCOUNT.role,
         is_active: true,
         salt,
         password_hash,
         client_id: null,
         created_at: new Date().toISOString(),
         last_login: null
-      });
+      };
+      localDb.users.push(primaryAdmin);
+    }
+    for (const user of localDb.users) {
+      if (user.id !== primaryAdmin.id && user.username === "admin" && isAdminRole(user.role)) {
+        user.is_active = false;
+      }
     }
     saveLocalDB();
   }
@@ -288,30 +317,69 @@ window.JMDataService = (() => {
       }
     }
     }
-    const { data: adminRows, error: adminErr } = await supabase
+    const { data: preferredRows, error: preferredErr } = await supabase
       .from("app_users")
-      .select("id")
-      .in("role", ["admin", "superadmin"])
+      .select("id,username,role,created_at")
+      .eq("username", DEFAULT_ADMIN_ACCOUNT.username)
       .limit(1);
-    if (adminErr) {
-      throw new Error(`No se pudo validar administradores (${adminErr.message})`);
+    if (preferredErr) {
+      throw new Error(`No se pudo validar usuario principal (${preferredErr.message})`);
     }
-    if (!adminRows || adminRows.length === 0) {
-      const salt = common.randomHex(16);
-      const password_hash = await common.buildPasswordHash("Admin123!", salt);
-      const { error: createAdminErr } = await supabase.from("app_users").insert({
-        username: "admin",
-        full_name: "Administrador principal",
-        email: "admin@jmtech.com",
-        role: "superadmin",
-        is_active: true,
-        client_id: null,
-        salt,
-        password_hash
-      });
-      if (createAdminErr) {
-        throw new Error(`No se pudo crear administrador inicial (${createAdminErr.message})`);
+    let targetAdmin = preferredRows && preferredRows.length > 0 ? preferredRows[0] : null;
+    if (!targetAdmin) {
+      const { data: adminRows, error: adminErr } = await supabase
+        .from("app_users")
+        .select("id,username,role,created_at")
+        .in("role", ["admin", "superadmin"])
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (adminErr) {
+        throw new Error(`No se pudo validar administradores (${adminErr.message})`);
       }
+      targetAdmin = adminRows && adminRows.length > 0 ? adminRows[0] : null;
+    }
+    const salt = common.randomHex(16);
+    const password_hash = await common.buildPasswordHash(DEFAULT_ADMIN_ACCOUNT.password, salt);
+    const adminPayload = {
+      username: DEFAULT_ADMIN_ACCOUNT.username,
+      full_name: DEFAULT_ADMIN_ACCOUNT.full_name,
+      email: DEFAULT_ADMIN_ACCOUNT.email,
+      role: DEFAULT_ADMIN_ACCOUNT.role,
+      is_active: true,
+      client_id: null,
+      salt,
+      password_hash
+    };
+    let activeAdminId = null;
+    if (targetAdmin) {
+      const { data: updatedAdmin, error: updateAdminErr } = await supabase
+        .from("app_users")
+        .update(adminPayload)
+        .eq("id", targetAdmin.id)
+        .select("id")
+        .single();
+      if (updateAdminErr) {
+        throw new Error(`No se pudo actualizar administrador principal (${updateAdminErr.message})`);
+      }
+      activeAdminId = updatedAdmin.id;
+    } else {
+      const { data: createdAdmin, error: createAdminErr } = await supabase
+        .from("app_users")
+        .insert(adminPayload)
+        .select("id")
+        .single();
+      if (createAdminErr) {
+        throw new Error(`No se pudo crear administrador principal (${createAdminErr.message})`);
+      }
+      activeAdminId = createdAdmin.id;
+    }
+    const { error: deactivateLegacyErr } = await supabase
+      .from("app_users")
+      .update({ is_active: false })
+      .eq("username", "admin")
+      .neq("id", activeAdminId);
+    if (deactivateLegacyErr) {
+      throw new Error(`No se pudo desactivar usuario admin anterior (${deactivateLegacyErr.message})`);
     }
   }
 

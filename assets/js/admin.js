@@ -11,12 +11,11 @@ window.addEventListener("DOMContentLoaded", () => {
     adminPass: document.getElementById("adminPass"),
     currentAdminLabel: document.getElementById("currentAdminLabel"),
     accessHint: document.getElementById("accessHint"),
-    modeBadge: document.getElementById("modeBadge"),
     sidebarCommunityName: document.getElementById("sidebarCommunityName"),
     clientPortalRootLink: document.getElementById("clientPortalRootLink"),
     adminLogoutBtn: document.getElementById("adminLogoutBtn"),
     navUsersBtn: document.getElementById("navUsersBtn"),
-    navButtons: Array.from(document.querySelectorAll(".nav-btn")),
+    navButtons: Array.from(document.querySelectorAll(".nav-btn[data-section]")),
     sectionPanels: Array.from(document.querySelectorAll(".section-panel")),
 
     mTotalClients: document.getElementById("mTotalClients"),
@@ -133,9 +132,9 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function paintMode(status) {
-    ui.modeBadge.textContent = status.modeLabel;
-    ui.modeBadge.classList.remove("cloud", "local");
-    ui.modeBadge.classList.add(status.mode === "supabase" ? "cloud" : "local");
+    if (!status) {
+      return;
+    }
   }
 
   function selectSection(section) {
@@ -459,14 +458,19 @@ window.addEventListener("DOMContentLoaded", () => {
           return;
         }
         selectSection(btn.dataset.section);
+        const menu = document.querySelector(".nav-dropdown");
+        if (menu && menu.open) {
+          menu.open = false;
+        }
       });
     });
-
-    ui.adminLogoutBtn.addEventListener("click", () => {
-      service.logout();
-      currentUser = null;
-      showLogin("Sesión cerrada correctamente.");
-    });
+    if (ui.adminLogoutBtn) {
+      ui.adminLogoutBtn.addEventListener("click", () => {
+        service.logout();
+        currentUser = null;
+        showLogin("Sesión cerrada correctamente.");
+      });
+    }
 
     ui.adminLoginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -690,9 +694,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const status = await service.init();
     paintMode(status);
-    if (status.warning) {
-      common.setMessage(ui.adminLoginMsg, status.warning, "error");
-    }
 
     currentUser = await service.getCurrentUser();
     if (!currentUser) {

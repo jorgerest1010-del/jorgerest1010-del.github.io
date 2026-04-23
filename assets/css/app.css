@@ -180,11 +180,14 @@ code {
   display: grid;
   place-items: center;
   padding: 20px;
+  min-height: 220px;
 }
 
 .login-company-logo {
-  width: min(230px, 100%);
-  max-height: 300px;
+  width: min(280px, 100%);
+  max-height: min(360px, 70vh);
+  height: auto;
+  display: block;
   object-fit: contain;
   filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.35));
 }
@@ -275,6 +278,16 @@ code {
   padding: 10px 12px;
   cursor: pointer;
   width: 100%;
+}
+
+.nav-btn-logout {
+  border-color: #8e3646;
+  background: #3c151e;
+  color: #ffd6de;
+}
+
+.nav-btn-logout:hover {
+  border-color: #b84a5f;
 }
 
 .nav-btn.active {
